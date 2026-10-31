@@ -1,0 +1,7 @@
+<resources>
+    <color name="plan_free">#757575</color>
+    <color name="plan_basic">#1E88E5</color>
+    <color name="plan_pro">#E53935</color>
+    <color name="feature_off">#E0E0E0</color>
+    <color name="feature_locked">#616161</color>
+</resources>

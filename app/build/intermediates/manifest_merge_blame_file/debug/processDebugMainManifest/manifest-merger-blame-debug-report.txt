@@ -1,0 +1,74 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.qureshisahib"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="26"
+8-->INJECTED
+9        android:targetSdkVersion="35" />
+9-->INJECTED
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:3:5-66
+11-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:3:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:4:5-78
+12-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:4:22-76
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:5:5-76
+13-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:5:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+14-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:6:5-86
+14-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:6:22-84
+15    <uses-permission android:name="android.permission.WAKE_LOCK" />
+15-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:7:5-67
+15-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:7:22-65
+16    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+16-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:8:5-76
+16-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:8:22-74
+17
+18    <application
+18-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:10:5-30:19
+19        android:allowBackup="false"
+19-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:13:9-36
+20        android:debuggable="true"
+21        android:extractNativeLibs="false"
+21-->INJECTED
+22        android:label="QURESHI SAHIB"
+22-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:12:9-38
+23        android:theme="@android:style/Theme.Material.NoActionBar"
+23-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:11:9-66
+24        android:usesCleartextTraffic="true" >
+24-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:14:9-44
+25        <activity
+25-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:16:9-23:20
+26            android:name="com.qureshisahib.MainActivity"
+26-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:17:13-41
+27            android:exported="true" >
+27-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:18:13-36
+28            <intent-filter>
+28-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:19:13-22:29
+29                <action android:name="android.intent.action.MAIN" />
+29-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:20:17-68
+29-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:20:25-66
+30
+31                <category android:name="android.intent.category.LAUNCHER" />
+31-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:21:17-76
+31-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:21:27-74
+32            </intent-filter>
+33        </activity>
+34
+35        <service
+35-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:25:9-28:55
+36            android:name="com.qureshisahib.BotService"
+36-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:26:13-39
+37            android:exported="false"
+37-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:27:13-37
+38            android:foregroundServiceType="dataSync" />
+38-->/data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:28:13-53
+39    </application>
+40
+41</manifest>

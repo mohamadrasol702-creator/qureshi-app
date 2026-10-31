@@ -1,0 +1,26 @@
+<resources>
+    <!-- عمومی -->
+    <string name="app_name">قریشی صاحب</string>
+    <string name="welcome">به قریشی صاحب خوش آمدید</string>
+    <string name="settings">تنظیمات</string>
+    <string name="about">درباره ما</string>
+    <string name="language">زبان</string>
+    <string name="cancel">لغو</string>
+    <string name="continue_btn">ادامه</string>
+
+    <!-- نسخه‌ها -->
+    <string name="select_plan">نسخه‌ی خود را انتخاب کنید</string>
+    <string name="free_plan">رایگان</string>
+    <string name="basic_plan">ساده</string>
+    <string name="pro_plan">پرو</string>
+    <string name="price_month">%1$s دلار در ماه</string>
+    <string name="free_price">رایگان</string>
+    <string name="upgrade">ارتقا به پرو</string>
+    <string name="change_plan">تغییر نسخه</string>
+
+    <!-- قابلیت‌ها -->
+    <string name="features">قابلیت‌ها</string>
+    <string name="master_switch">کلید اصلی</string>
+    <string name="features_count">%1$d از %2$d قابلیت روشن است</string>
+    <string name="locked">در نسخه‌ی شما نیست</string>
+</resources>

@@ -1,0 +1,83 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:1:1-31:12
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:1:1-31:12
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:1:1-31:12
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:1:1-31:12
+	package
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:3:5-66
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:3:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:4:5-78
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:4:22-76
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:5:5-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:5:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_DATA_SYNC
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:6:5-86
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:6:22-84
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:7:5-67
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:7:22-65
+uses-permission#android.permission.POST_NOTIFICATIONS
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:8:5-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:8:22-74
+application
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:10:5-30:19
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:10:5-30:19
+	android:extractNativeLibs
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:12:9-38
+	android:allowBackup
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:13:9-36
+	android:theme
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:11:9-66
+	android:usesCleartextTraffic
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:14:9-44
+activity#com.qureshisahib.MainActivity
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:16:9-23:20
+	android:exported
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:18:13-36
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:17:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:19:13-22:29
+action#android.intent.action.MAIN
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:20:17-68
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:20:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:21:17-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:21:27-74
+service#com.qureshisahib.BotService
+ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:25:9-28:55
+	android:exported
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:27:13-37
+	android:foregroundServiceType
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:28:13-53
+	android:name
+		ADDED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml:26:13-39
+uses-sdk
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /data/data/com.termux/files/home/QURESHI-SAHIB/app/src/main/AndroidManifest.xml

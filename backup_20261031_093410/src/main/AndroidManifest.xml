@@ -1,0 +1,572 @@
+cd ~/QURESHI-SAHIB
+
+# ---------- BACKUP ----------
+B=backup_$(date +%Y%m%d_%H%M%S)
+mkdir -p "$B"
+cp -r app/src "$B/src"
+cp app/build.gradle* "$B/" 2>/dev/null
+echo "Backup saved in: $B"
+
+# ---------- minSdk -> 26 ----------
+for f in app/build.gradle app/build.gradle.kts; do
+  [ -f "$f" ] && sed -i -E 's/(minSdk(Version)?[ =]+)[0-9]+/\1 26/' "$f"
+done
+echo "===== SDK / NAMESPACE SETTINGS ====="
+grep -nE "namespace|applicationId|minSdk|targetSdk|compileSdk" app/build.gradle* 
+
+mkdir -p app/src/main/java/com/qureshisahib
+
+# ---------- MANIFEST ----------
+cat > app/src/main/AndroidManifest.xml <<'EOF'
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application
+        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:label="QURESHI SAHIB"
+        android:allowBackup="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".BotService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
+
+    </application>
+</manifest>
+EOF
+
+# ---------- BotService.java ----------
+cat > app/src/main/java/com/qureshisahib/BotService.java <<'EOF'
+package com.qureshisahib;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.os.Build;
+import android.os.IBinder;
+import android.os.PowerManager;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class BotService extends Service {
+
+    public static final String ACTION_START = "com.qureshisahib.START";
+    public static final String ACTION_STOP = "com.qureshisahib.STOP";
+    public static final String ACTION_LOG = "com.qureshisahib.LOG";
+    public static final String ACTION_STATE = "com.qureshisahib.STATE";
+
+    private static final String CHANNEL_ID = "bot_channel";
+    private static final int NOTIF_ID = 1001;
+    private static final int INTERVAL_MS = 5000;
+    private static final int MAX_LOG_CHARS = 20000;
+
+    public static volatile boolean running = false;
+    public static volatile long startTime = 0;
+    public static volatile int ticks = 0;
+
+    private static final StringBuilder LOG = new StringBuilder();
+
+    private Thread worker;
+    private PowerManager.WakeLock wakeLock;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        String action = intent == null ? ACTION_START : intent.getAction();
+
+        if (ACTION_STOP.equals(action)) {
+            stopBot();
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
+        startBot();
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        if (running) stopBot();
+        super.onDestroy();
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    private void startBot() {
+        createChannel();
+
+        Notification n = buildNotification();
+        if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(NOTIF_ID, n);
+        }
+
+        if (running) return;
+
+        running = true;
+        startTime = System.currentTimeMillis();
+        ticks = 0;
+
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "qureshisahib:bot");
+        wakeLock.acquire();
+
+        log(this, "Bot started");
+        sendState(this);
+
+        worker = new Thread(() -> {
+            while (running && !Thread.currentThread().isInterrupted()) {
+                try {
+                    ticks++;
+                    runBotTask();
+                    updateNotification();
+                    Thread.sleep(INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    log(this, "Error: " + e.getMessage());
+                }
+            }
+        }, "bot-worker");
+        worker.start();
+    }
+
+    private void stopBot() {
+        boolean wasRunning = running;
+        running = false;
+
+        if (worker != null) {
+            worker.interrupt();
+            worker = null;
+        }
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        wakeLock = null;
+
+        stopForeground(STOP_FOREGROUND_REMOVE);
+
+        if (wasRunning) {
+            log(this, "Bot stopped (uptime " + formatUptime(System.currentTimeMillis() - startTime) + ")");
+        }
+        sendState(this);
+    }
+
+    /** SIMULATION ONLY: put the real bot work here. Runs every INTERVAL_MS on a background thread. */
+    private void runBotTask() {
+        if (ticks == 1 || ticks % 6 == 0) {
+            log(this, "Tick #" + ticks + " | network: " + (isOnline(this) ? "ONLINE" : "OFFLINE"));
+        }
+    }
+
+    private void createChannel() {
+        NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, "Bot status", NotificationManager.IMPORTANCE_LOW);
+        ch.setDescription("Shows while the bot is running");
+        getSystemService(NotificationManager.class).createNotificationChannel(ch);
+    }
+
+    private Notification buildNotification() {
+        int flags = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
+
+        PendingIntent openPi = PendingIntent.getActivity(
+                this, 0, new Intent(this, MainActivity.class), flags);
+
+        PendingIntent stopPi = PendingIntent.getService(
+                this, 1, new Intent(this, BotService.class).setAction(ACTION_STOP), flags);
+
+        String text = running
+                ? "Running • " + formatUptime(System.currentTimeMillis() - startTime) + " • ticks " + ticks
+                : "Starting…";
+
+        return new Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("♛ QURESHI SAHIB")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setContentIntent(openPi)
+                .addAction(android.R.drawable.ic_media_pause, "Stop", stopPi)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .build();
+    }
+
+    private void updateNotification() {
+        getSystemService(NotificationManager.class).notify(NOTIF_ID, buildNotification());
+    }
+
+    public static boolean isOnline(Context c) {
+        ConnectivityManager cm = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+        Network n = cm.getActiveNetwork();
+        if (n == null) return false;
+        NetworkCapabilities caps = cm.getNetworkCapabilities(n);
+        return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    public static String formatUptime(long ms) {
+        long s = Math.max(0, ms / 1000);
+        return String.format(Locale.US, "%02d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60);
+    }
+
+    public static void log(Context c, String msg) {
+        String time = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+        synchronized (LOG) {
+            LOG.append('[').append(time).append("] ").append(msg).append('\n');
+            if (LOG.length() > MAX_LOG_CHARS) {
+                LOG.delete(0, LOG.length() - MAX_LOG_CHARS);
+            }
+        }
+        c.sendBroadcast(new Intent(ACTION_LOG).setPackage(c.getPackageName()));
+    }
+
+    public static String getLog() {
+        synchronized (LOG) {
+            return LOG.toString();
+        }
+    }
+
+    public static void clearLog(Context c) {
+        synchronized (LOG) {
+            LOG.setLength(0);
+        }
+        c.sendBroadcast(new Intent(ACTION_LOG).setPackage(c.getPackageName()));
+    }
+
+    private static void sendState(Context c) {
+        c.sendBroadcast(new Intent(ACTION_STATE).setPackage(c.getPackageName()));
+    }
+}
+EOF
+
+# ---------- MainActivity.java ----------
+cat > app/src/main/java/com/qureshisahib/MainActivity.java <<'EOF'
+package com.qureshisahib;
+
+import android.Manifest;
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.Settings;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Switch;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+    private static final int REQ_NOTIF = 100;
+
+    private static final int GOLD = 0xFFFFD700;
+    private static final int GREEN = 0xFF2ECC71;
+    private static final int RED = 0xFFE74C3C;
+    private static final int CARD = 0xFF1A1A1A;
+
+    private TextView statusDot, statusText, uptimeText, statsText, logText;
+    private ScrollView logScroll;
+    private Switch botSwitch;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private final Runnable ticker = new Runnable() {
+        @Override
+        public void run() {
+            updateLive();
+            handler.postDelayed(this, 1000);
+        }
+    };
+
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String a = intent.getAction();
+            if (BotService.ACTION_LOG.equals(a)) {
+                refreshLog();
+            } else if (BotService.ACTION_STATE.equals(a)) {
+                syncSwitch();
+            }
+        }
+    };
+
+    private final CompoundButton.OnCheckedChangeListener switchListener = (button, checked) -> {
+        if (checked) requestStart();
+        else stopBot();
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        buildUi();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        IntentFilter f = new IntentFilter();
+        f.addAction(BotService.ACTION_LOG);
+        f.addAction(BotService.ACTION_STATE);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(receiver, f, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(receiver, f);
+        }
+
+        syncSwitch();
+        refreshLog();
+        handler.post(ticker);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(receiver);
+        handler.removeCallbacks(ticker);
+    }
+
+    private void requestStart() {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF);
+        } else {
+            startBot();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (code == REQ_NOTIF) {
+            if (results.length == 0 || results[0] != PackageManager.PERMISSION_GRANTED) {
+                BotService.log(this, "Notification permission denied - status shows only in the app");
+            }
+            startBot();
+        }
+    }
+
+    private void startBot() {
+        startForegroundService(new Intent(this, BotService.class).setAction(BotService.ACTION_START));
+    }
+
+    private void stopBot() {
+        startService(new Intent(this, BotService.class).setAction(BotService.ACTION_STOP));
+    }
+
+    private void syncSwitch() {
+        botSwitch.setOnCheckedChangeListener(null);
+        botSwitch.setChecked(BotService.running);
+        botSwitch.setOnCheckedChangeListener(switchListener);
+        updateLive();
+    }
+
+    private void updateLive() {
+        boolean running = BotService.running;
+
+        statusDot.setTextColor(running ? GREEN : RED);
+        statusText.setText(running ? "BOT STATUS: RUNNING" : "BOT STATUS: STOPPED");
+
+        long ms = running ? System.currentTimeMillis() - BotService.startTime : 0;
+        uptimeText.setText("Uptime  " + BotService.formatUptime(ms));
+
+        statsText.setText("Ticks: " + (running ? BotService.ticks : 0)
+                + "   |   Network: " + (BotService.isOnline(this) ? "ONLINE" : "OFFLINE"));
+    }
+
+    private void refreshLog() {
+        logText.setText(BotService.getLog());
+        logScroll.post(() -> logScroll.fullScroll(ScrollView.FOCUS_DOWN));
+    }
+
+    private void copyLog() {
+        ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        cm.setPrimaryClip(ClipData.newPlainText("bot log", BotService.getLog()));
+        Toast.makeText(this, "Log copied", Toast.LENGTH_SHORT).show();
+    }
+
+    private void openBatterySettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+        } catch (Exception e) {
+            Toast.makeText(this, "Cannot open battery settings", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void buildUi() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setGravity(Gravity.CENTER_HORIZONTAL);
+        root.setBackgroundColor(Color.BLACK);
+        root.setPadding(dp(20), dp(40), dp(20), dp(20));
+
+        TextView title = new TextView(this);
+        title.setText("♛ QURESHI SAHIB ♛");
+        title.setTextSize(28);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(GOLD);
+        title.setGravity(Gravity.CENTER);
+        root.addView(title, lp(0, 0, 0, dp(20)));
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER);
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+        card.setBackground(rounded(CARD, GOLD, dp(16)));
+
+        statusDot = new TextView(this);
+        statusDot.setText("●");
+        statusDot.setTextSize(40);
+        statusDot.setGravity(Gravity.CENTER);
+        card.addView(statusDot);
+
+        statusText = new TextView(this);
+        statusText.setTextSize(20);
+        statusText.setTypeface(Typeface.DEFAULT_BOLD);
+        statusText.setTextColor(Color.WHITE);
+        statusText.setGravity(Gravity.CENTER);
+        card.addView(statusText, lp(0, dp(6), 0, dp(4)));
+
+        uptimeText = new TextView(this);
+        uptimeText.setTextSize(16);
+        uptimeText.setTypeface(Typeface.MONOSPACE);
+        uptimeText.setTextColor(GOLD);
+        uptimeText.setGravity(Gravity.CENTER);
+        card.addView(uptimeText, lp(0, 0, 0, dp(4)));
+
+        statsText = new TextView(this);
+        statsText.setTextSize(13);
+        statsText.setTextColor(0xFFAAAAAA);
+        statsText.setGravity(Gravity.CENTER);
+        card.addView(statsText, lp(0, 0, 0, dp(14)));
+
+        botSwitch = new Switch(this);
+        botSwitch.setText("Bot Power  ");
+        botSwitch.setTextSize(18);
+        botSwitch.setTextColor(Color.WHITE);
+        card.addView(botSwitch, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        root.addView(card, lp(0, 0, 0, dp(16)));
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button clear = smallButton("Clear Log");
+        clear.setOnClickListener(v -> BotService.clearLog(this));
+
+        Button copy = smallButton("Copy Log");
+        copy.setOnClickListener(v -> copyLog());
+
+        Button battery = smallButton("Battery");
+        battery.setOnClickListener(v -> openBatterySettings());
+
+        row.addView(clear, weight());
+        row.addView(copy, weight());
+        row.addView(battery, weight());
+        root.addView(row, lp(0, 0, 0, dp(12)));
+
+        TextView logTitle = new TextView(this);
+        logTitle.setText("ACTIVITY LOG");
+        logTitle.setTextSize(14);
+        logTitle.setTextColor(GOLD);
+        root.addView(logTitle, lp(0, 0, 0, dp(6)));
+
+        logScroll = new ScrollView(this);
+        logScroll.setBackground(rounded(CARD, 0xFF333333, dp(12)));
+        logScroll.setPadding(dp(12), dp(12), dp(12), dp(12));
+
+        logText = new TextView(this);
+        logText.setTextSize(13);
+        logText.setTextColor(0xFFBBBBBB);
+        logText.setTypeface(Typeface.MONOSPACE);
+        logText.setTextIsSelectable(true);
+        logScroll.addView(logText);
+
+        root.addView(logScroll, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        setContentView(root);
+    }
+
+    private Button smallButton(String text) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextSize(12);
+        b.setAllCaps(false);
+        return b;
+    }
+
+    private LinearLayout.LayoutParams weight() {
+        return new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+    }
+
+    private GradientDrawable rounded(int fill, int stroke, int radius) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(fill);
+        d.setCornerRadius(radius);
+        d.setStroke(dp(1), stroke);
+        return d;
+    }
+
+    private LinearLayout.LayoutParams lp(int l, int t, int r, int b) {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        p.setMargins(l, t, r, b);
+        return p;
+    }
+
+    private int dp(int v) {
+        return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+    }
+}
+EOF
+
+# ---------- CHECKS ----------
+echo "===== PACKAGE CHECK ====="
+grep -n "^package " app/src/main/java/com/qureshisahib/*.java
+
+echo "===== COMPILE CHECK (no APK) ====="
+./gradlew :app:compileDebugJavaWithJavac
